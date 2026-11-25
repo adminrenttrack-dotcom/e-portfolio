@@ -1,26 +1,100 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fffdf7;
+  --foreground: #1c2420;
+  --chalkboard: #1e4d3b;
+  --chalkboard-dark: #15382a;
+  --sunflower: #fbbf24;
+  --sky: #38bdf8;
+  --coral: #fb7185;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-chalkboard: var(--chalkboard);
+  --color-chalkboard-dark: var(--chalkboard-dark);
+  --color-sunflower: var(--sunflower);
+  --color-sky: var(--sky);
+  --color-coral: var(--coral);
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-fredoka), ui-rounded, system-ui, sans-serif;
+  --font-hand: var(--font-caveat), cursive;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 5rem;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: #fffdf5;
+  color: #1c2420;
+  font-family: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  background-image:
+    radial-gradient(rgba(30, 77, 59, 0.085) 1.1px, transparent 1.1px),
+    linear-gradient(
+      180deg,
+      rgba(254, 243, 199, 0.32) 0%,
+      rgba(255, 253, 247, 0.7) 35%,
+      rgba(224, 242, 254, 0.28) 70%,
+      rgba(255, 228, 230, 0.22) 100%
+    );
+  background-size: 24px 24px, 100% 100%;
+  background-attachment: fixed;
+}
+
+h1,
+h2,
+h3,
+h4,
+.font-heading {
+  font-family: var(--font-fredoka), ui-rounded, system-ui, sans-serif;
+}
+
+.font-hand {
+  font-family: var(--font-caveat), cursive;
+}
+
+/* Hide scrollbars on horizontal swipeable pill strips */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Classroom wooden ruler tick marks */
+.ruler-ticks {
+  background-image: repeating-linear-gradient(
+    to right,
+    rgba(69, 39, 10, 0.55) 0px,
+    rgba(69, 39, 10, 0.55) 1.5px,
+    transparent 1.5px,
+    transparent 12px
+  );
+}
+
+/* Lined notebook paper effect for Reflection Journal */
+.notebook-lined {
+  background-color: #fffef9;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 31px,
+    rgba(56, 189, 248, 0.22) 31px,
+    rgba(56, 189, 248, 0.22) 32px
+  );
+  background-position: 0 12px;
+}
+
+/* Subtle chalkboard dust texture */
+.chalkboard-surface {
+  background-color: #1e4d3b;
+  background-image:
+    radial-gradient(circle at 20% 25%, rgba(255, 255, 255, 0.06) 0%, transparent 45%),
+    radial-gradient(circle at 80% 75%, rgba(255, 255, 255, 0.05) 0%, transparent 50%),
+    linear-gradient(145deg, #215642 0%, #194232 60%, #15382a 100%);
 }
