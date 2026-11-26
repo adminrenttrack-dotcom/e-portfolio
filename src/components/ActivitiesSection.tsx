@@ -49,7 +49,7 @@ export function ActivitiesSection() {
       className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20 lg:px-8"
     >
       <SectionHeader
-        number="06"
+        number="07"
         eyebrow="Academic Outputs & Practicum"
         title="Learning Activities and Outputs"
         subtitle="Browse my BEEd coursework, lesson plans, instructional materials, and demonstration teaching entries below. Tap any row to view full output details."

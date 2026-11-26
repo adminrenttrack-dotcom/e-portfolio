@@ -18,7 +18,7 @@ export function TableOfContents() {
       className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20 lg:px-8"
     >
       <SectionHeader
-        number="02"
+        number="03"
         eyebrow="Classroom Index"
         title="Table of Contents"
         subtitle="Select any section below to jump straight to that chapter of my Academic E-Portfolio."

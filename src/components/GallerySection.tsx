@@ -31,9 +31,9 @@ import {
   type GalleryVideo,
 } from "@/src/data/portfolioData";
 import {
-  deleteStoredMedia,
-  loadStoredMedia,
-  saveStoredMedia,
+  deleteCloudMedia,
+  fetchCloudMedia,
+  uploadFileToNeon,
 } from "@/src/lib/mediaStorage";
 import { SectionHeader } from "./SectionHeader";
 import { SmartImage } from "./SmartImage";
@@ -142,25 +142,22 @@ export function GallerySection() {
   // Shared Lightbox state (supports opening either School or Family photos)
   const [lightboxItems, setLightboxItems] = useState<LightboxPhotoItem[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
 
-  const objectUrlsRef = useRef<string[]>([]);
-
-  // Load saved browser uploads (School Photos, Family Photos, Videos)
+  // Load saved Neon cloud uploads (School Photos, Family Photos, Videos, Hidden IDs)
   useEffect(() => {
     let active = true;
-    loadStoredMedia().then((records) => {
+    fetchCloudMedia().then(({ items, hiddenIds: savedHidden }) => {
       if (!active) return;
       const loadedSchool: GalleryPhoto[] = [];
       const loadedFamily: FamilyPhoto[] = [];
       const loadedVideos: GalleryVideo[] = [];
 
-      records.forEach((rec) => {
-        const url = URL.createObjectURL(rec.blob);
-        objectUrlsRef.current.push(url);
+      items.forEach((rec) => {
         if (rec.mediaType === "video") {
           loadedVideos.push({
             id: rec.id,
-            src: url,
+            src: rec.src,
             title: rec.caption,
             tag: rec.category,
             date: rec.date,
@@ -170,7 +167,7 @@ export function GallerySection() {
         } else if (rec.mediaType === "family") {
           loadedFamily.push({
             id: rec.id,
-            src: url,
+            src: rec.src,
             caption: rec.caption,
             date: rec.date,
             description: rec.description,
@@ -185,7 +182,7 @@ export function GallerySection() {
             : "Classroom Activities";
           loadedSchool.push({
             id: rec.id,
-            src: url,
+            src: rec.src,
             caption: rec.caption,
             category: validCat,
             date: rec.date,
@@ -196,25 +193,14 @@ export function GallerySection() {
         }
       });
 
-      setUserPhotos(loadedSchool.reverse());
-      setUserFamilyPhotos(loadedFamily.reverse());
-      setUserVideos(loadedVideos.reverse());
-
-      try {
-        const saved = window.localStorage.getItem("romnick-deleted-media-ids");
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed)) setHiddenIds(parsed);
-        }
-      } catch {
-        // Ignore storage read errors
-      }
+      setUserPhotos(loadedSchool);
+      setUserFamilyPhotos(loadedFamily);
+      setUserVideos(loadedVideos);
+      setHiddenIds(savedHidden);
     });
 
     return () => {
       active = false;
-      objectUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
-      objectUrlsRef.current = [];
     };
   }, []);
 
@@ -286,9 +272,8 @@ export function GallerySection() {
   const handleUploadSchoolPhotos = async () => {
     if (selectedSchoolFiles.length === 0 || isUploadingPhoto) return;
     setIsUploadingPhoto(true);
+    setUploadProgress(0);
     setPhotoNotice("");
-
-    await new Promise((r) => setTimeout(r, 650));
 
     const added: GalleryPhoto[] = [];
     const todayLabel = new Date().toLocaleDateString("en-US", {
@@ -297,50 +282,61 @@ export function GallerySection() {
       year: "numeric",
     });
 
-    for (let i = 0; i < selectedSchoolFiles.length; i++) {
-      const file = selectedSchoolFiles[i];
-      const id = `school-photo-${Date.now()}-${i}`;
-      const cleanName = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
-      const finalCaption = photoCaption.trim() || cleanName || "BEEd Photo";
-      const url = URL.createObjectURL(file);
-      objectUrlsRef.current.push(url);
+    try {
+      for (let i = 0; i < selectedSchoolFiles.length; i++) {
+        const file = selectedSchoolFiles[i];
+        const id = `school-photo-${Date.now()}-${i}`;
+        const cleanName = file.name
+          .replace(/\.[^/.]+$/, "")
+          .replace(/[-_]/g, " ");
+        const finalCaption = photoCaption.trim() || cleanName || "BEEd Photo";
 
-      const item: GalleryPhoto = {
-        id,
-        src: url,
-        caption: finalCaption,
-        category: photoCategory,
-        date: todayLabel,
-        description: "Uploaded BEEd classroom evidence photo.",
-        objectPosition: "object-center",
-        isUserUpload: true,
-      };
-      added.push(item);
+        const saved = await uploadFileToNeon({
+          id,
+          caption: finalCaption,
+          category: photoCategory,
+          date: todayLabel,
+          description: "Uploaded BEEd classroom evidence photo.",
+          mediaType: "school",
+          file,
+          onProgress: (pct) => {
+            const overall = Math.round(
+              ((i + pct / 100) / selectedSchoolFiles.length) * 100
+            );
+            setUploadProgress(overall);
+          },
+        });
 
-      await saveStoredMedia({
-        id,
-        caption: item.caption,
-        category: item.category,
-        date: item.date,
-        description: item.description,
-        mediaType: "image",
-        blob: file,
-      });
-    }
+        added.push({
+          id: saved.id,
+          src: saved.src,
+          caption: saved.caption,
+          category: photoCategory,
+          date: saved.date,
+          description: saved.description,
+          objectPosition: "object-center",
+          isUserUpload: true,
+        });
+      }
 
-    setIsUploadingPhoto(false);
-    if (added.length > 0) {
-      setUserPhotos((prev) => [...added, ...prev]);
-      setPhotoCaption("");
-      setSelectedSchoolFiles([]);
-      setPhotoNotice(
-        `Added ${added.length} school ${added.length === 1 ? "photo" : "photos"}!`
-      );
-      setTimeout(() => {
-        setPhotoNotice("");
-        setPhotoModalOpen(false);
-        photoScrollRef.current?.scrollTo({ left: 0, behavior: "smooth" });
-      }, 750);
+      if (added.length > 0) {
+        setUserPhotos((prev) => [...added, ...prev]);
+        setPhotoCaption("");
+        setSelectedSchoolFiles([]);
+        setPhotoNotice(
+          `Saved ${added.length} school ${added.length === 1 ? "photo" : "photos"} to cloud!`
+        );
+        setTimeout(() => {
+          setPhotoNotice("");
+          setPhotoModalOpen(false);
+          photoScrollRef.current?.scrollTo({ left: 0, behavior: "smooth" });
+        }, 750);
+      }
+    } catch {
+      setPhotoNotice("Upload failed. Please try again.");
+    } finally {
+      setIsUploadingPhoto(false);
+      setUploadProgress(0);
     }
   };
 
@@ -356,9 +352,8 @@ export function GallerySection() {
   const handleUploadFamilyPhotos = async () => {
     if (selectedFamilyFiles.length === 0 || isUploadingFamily) return;
     setIsUploadingFamily(true);
+    setUploadProgress(0);
     setFamilyNotice("");
-
-    await new Promise((r) => setTimeout(r, 650));
 
     const added: FamilyPhoto[] = [];
     const todayLabel = new Date().toLocaleDateString("en-US", {
@@ -367,50 +362,61 @@ export function GallerySection() {
       year: "numeric",
     });
 
-    for (let i = 0; i < selectedFamilyFiles.length; i++) {
-      const file = selectedFamilyFiles[i];
-      const id = `family-photo-${Date.now()}-${i}`;
-      const cleanName = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
-      const finalCaption =
-        familyCaption.trim() || cleanName || "My Family Keepsake";
-      const url = URL.createObjectURL(file);
-      objectUrlsRef.current.push(url);
+    try {
+      for (let i = 0; i < selectedFamilyFiles.length; i++) {
+        const file = selectedFamilyFiles[i];
+        const id = `family-photo-${Date.now()}-${i}`;
+        const cleanName = file.name
+          .replace(/\.[^/.]+$/, "")
+          .replace(/[-_]/g, " ");
+        const finalCaption =
+          familyCaption.trim() || cleanName || "My Family Keepsake";
 
-      const item: FamilyPhoto = {
-        id,
-        src: url,
-        caption: finalCaption,
-        date: todayLabel,
-        description: "Cherished family moment and inspiration.",
-        objectPosition: "object-center",
-        isUserUpload: true,
-      };
-      added.push(item);
+        const saved = await uploadFileToNeon({
+          id,
+          caption: finalCaption,
+          category: "Family",
+          date: todayLabel,
+          description: "Cherished family moment and inspiration.",
+          mediaType: "family",
+          file,
+          onProgress: (pct) => {
+            const overall = Math.round(
+              ((i + pct / 100) / selectedFamilyFiles.length) * 100
+            );
+            setUploadProgress(overall);
+          },
+        });
 
-      await saveStoredMedia({
-        id,
-        caption: item.caption,
-        category: "Family",
-        date: item.date,
-        description: item.description,
-        mediaType: "family",
-        blob: file,
-      });
-    }
+        added.push({
+          id: saved.id,
+          src: saved.src,
+          caption: saved.caption,
+          date: saved.date,
+          description: saved.description,
+          objectPosition: "object-center",
+          isUserUpload: true,
+        });
+      }
 
-    setIsUploadingFamily(false);
-    if (added.length > 0) {
-      setUserFamilyPhotos((prev) => [...added, ...prev]);
-      setFamilyCaption("");
-      setSelectedFamilyFiles([]);
-      setFamilyNotice(
-        `Added ${added.length} family ${added.length === 1 ? "photo" : "photos"}!`
-      );
-      setTimeout(() => {
-        setFamilyNotice("");
-        setFamilyModalOpen(false);
-        familyScrollRef.current?.scrollTo({ left: 0, behavior: "smooth" });
-      }, 750);
+      if (added.length > 0) {
+        setUserFamilyPhotos((prev) => [...added, ...prev]);
+        setFamilyCaption("");
+        setSelectedFamilyFiles([]);
+        setFamilyNotice(
+          `Saved ${added.length} family ${added.length === 1 ? "photo" : "photos"} to cloud!`
+        );
+        setTimeout(() => {
+          setFamilyNotice("");
+          setFamilyModalOpen(false);
+          familyScrollRef.current?.scrollTo({ left: 0, behavior: "smooth" });
+        }, 750);
+      }
+    } catch {
+      setFamilyNotice("Upload failed. Please try again.");
+    } finally {
+      setIsUploadingFamily(false);
+      setUploadProgress(0);
     }
   };
 
@@ -426,9 +432,8 @@ export function GallerySection() {
   const handleUploadVideos = async () => {
     if (selectedVideoFiles.length === 0 || isUploadingVideo) return;
     setIsUploadingVideo(true);
+    setUploadProgress(0);
     setVideoNotice("");
-
-    await new Promise((r) => setTimeout(r, 750));
 
     const added: GalleryVideo[] = [];
     const todayLabel = new Date().toLocaleDateString("en-US", {
@@ -437,49 +442,61 @@ export function GallerySection() {
       year: "numeric",
     });
 
-    for (let i = 0; i < selectedVideoFiles.length; i++) {
-      const file = selectedVideoFiles[i];
-      const id = `video-upload-${Date.now()}-${i}`;
-      const cleanName = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
-      const finalTitle = videoTitle.trim() || cleanName || "BEEd Teaching Video";
-      const url = URL.createObjectURL(file);
-      objectUrlsRef.current.push(url);
+    try {
+      for (let i = 0; i < selectedVideoFiles.length; i++) {
+        const file = selectedVideoFiles[i];
+        const id = `video-upload-${Date.now()}-${i}`;
+        const cleanName = file.name
+          .replace(/\.[^/.]+$/, "")
+          .replace(/[-_]/g, " ");
+        const finalTitle =
+          videoTitle.trim() || cleanName || "BEEd Teaching Video";
 
-      const item: GalleryVideo = {
-        id,
-        src: url,
-        title: finalTitle,
-        tag: videoTag,
-        date: todayLabel,
-        description: "Uploaded BEEd teaching / classroom activity video.",
-        isUserUpload: true,
-      };
-      added.push(item);
+        const saved = await uploadFileToNeon({
+          id,
+          caption: finalTitle,
+          category: videoTag,
+          date: todayLabel,
+          description: "Uploaded BEEd teaching / classroom activity video.",
+          mediaType: "video",
+          file,
+          onProgress: (pct) => {
+            const overall = Math.round(
+              ((i + pct / 100) / selectedVideoFiles.length) * 100
+            );
+            setUploadProgress(overall);
+          },
+        });
 
-      await saveStoredMedia({
-        id,
-        caption: item.title,
-        category: item.tag,
-        date: item.date,
-        description: item.description,
-        mediaType: "video",
-        blob: file,
-      });
-    }
+        added.push({
+          id: saved.id,
+          src: saved.src,
+          title: saved.caption,
+          tag: saved.category,
+          date: saved.date,
+          description: saved.description,
+          isUserUpload: true,
+        });
+      }
 
-    setIsUploadingVideo(false);
-    if (added.length > 0) {
-      setUserVideos((prev) => [...added, ...prev]);
-      setVideoTitle("");
-      setSelectedVideoFiles([]);
-      setVideoNotice(
-        `Added ${added.length} ${added.length === 1 ? "video" : "videos"}! Ready to play.`
-      );
-      setTimeout(() => {
-        setVideoNotice("");
-        setVideoModalOpen(false);
-        videoScrollRef.current?.scrollTo({ left: 0, behavior: "smooth" });
-      }, 750);
+      if (added.length > 0) {
+        setUserVideos((prev) => [...added, ...prev]);
+        setVideoTitle("");
+        setSelectedVideoFiles([]);
+        setVideoNotice(
+          `Saved ${added.length} ${added.length === 1 ? "video" : "videos"} to cloud! Visible on all devices.`
+        );
+        setTimeout(() => {
+          setVideoNotice("");
+          setVideoModalOpen(false);
+          videoScrollRef.current?.scrollTo({ left: 0, behavior: "smooth" });
+        }, 850);
+      }
+    } catch {
+      setVideoNotice("Upload failed. Please try a smaller MP4 video.");
+    } finally {
+      setIsUploadingVideo(false);
+      setUploadProgress(0);
     }
   };
 
@@ -498,44 +515,36 @@ export function GallerySection() {
     if (!pendingDelete || isDeleting) return;
     setIsDeleting(true);
 
-    if (pendingDelete.isUserUpload) {
-      await deleteStoredMedia(pendingDelete.id);
-      if (pendingDelete.type === "school") {
-        setUserPhotos((prev) =>
-          prev.filter((item) => item.id !== pendingDelete.id)
-        );
-      } else if (pendingDelete.type === "family") {
-        setUserFamilyPhotos((prev) =>
-          prev.filter((item) => item.id !== pendingDelete.id)
-        );
+    try {
+      await deleteCloudMedia(pendingDelete.id, Boolean(pendingDelete.isUserUpload));
+
+      if (pendingDelete.isUserUpload) {
+        if (pendingDelete.type === "school") {
+          setUserPhotos((prev) =>
+            prev.filter((item) => item.id !== pendingDelete.id)
+          );
+        } else if (pendingDelete.type === "family") {
+          setUserFamilyPhotos((prev) =>
+            prev.filter((item) => item.id !== pendingDelete.id)
+          );
+        } else {
+          setUserVideos((prev) =>
+            prev.filter((item) => item.id !== pendingDelete.id)
+          );
+        }
       } else {
-        setUserVideos((prev) =>
-          prev.filter((item) => item.id !== pendingDelete.id)
+        setHiddenIds((prev) =>
+          prev.includes(pendingDelete.id) ? prev : [...prev, pendingDelete.id]
         );
       }
-    } else {
-      setHiddenIds((prev) => {
-        const next = prev.includes(pendingDelete.id)
-          ? prev
-          : [...prev, pendingDelete.id];
-        try {
-          window.localStorage.setItem(
-            "romnick-deleted-media-ids",
-            JSON.stringify(next)
-          );
-        } catch {
-          // Ignore storage write errors
-        }
-        return next;
-      });
-    }
 
-    if (pendingDelete.type !== "video") {
-      setLightboxIndex(null);
+      if (pendingDelete.type !== "video") {
+        setLightboxIndex(null);
+      }
+    } finally {
+      setIsDeleting(false);
+      setPendingDelete(null);
     }
-
-    setIsDeleting(false);
-    setPendingDelete(null);
   };
 
   const handleNext = useCallback(() => {
@@ -612,7 +621,7 @@ export function GallerySection() {
       className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20 lg:px-8"
     >
       <SectionHeader
-        number="07"
+        number="02"
         eyebrow="School Photos, Family Keepsakes & Videos"
         title="Evidence of Learning & Gallery"
         subtitle="School photos, family inspiration photos, and BEEd teaching videos are separated into their own scrollable shelves below."
@@ -1266,7 +1275,7 @@ export function GallerySection() {
                   {isUploadingPhoto ? (
                     <>
                       <Loader2 className="h-5 w-5 animate-spin text-[#FBBF24]" />
-                      Uploading Photos...
+                      Uploading Photos ({uploadProgress}%)...
                     </>
                   ) : (
                     <>
@@ -1398,7 +1407,7 @@ export function GallerySection() {
                   {isUploadingFamily ? (
                     <>
                       <Loader2 className="h-5 w-5 animate-spin" />
-                      Uploading Family Photos...
+                      Uploading Family Photos ({uploadProgress}%)...
                     </>
                   ) : (
                     <>
@@ -1552,7 +1561,7 @@ export function GallerySection() {
                   {isUploadingVideo ? (
                     <>
                       <Loader2 className="h-5 w-5 animate-spin" />
-                      Uploading Video...
+                      Uploading Video ({uploadProgress}%)...
                     </>
                   ) : (
                     <>

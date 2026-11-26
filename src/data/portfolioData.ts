@@ -142,8 +142,16 @@ export const navSections: NavSection[] = [
     accent: "green",
   },
   {
-    id: "toc",
+    id: "gallery",
     number: "02",
+    title: "Evidence of Learning & Gallery",
+    shortTitle: "Gallery",
+    subtitle: "School photos, family tribute, teaching videos, and feedback",
+    accent: "blue",
+  },
+  {
+    id: "toc",
+    number: "03",
     title: "Table of Contents",
     shortTitle: "Contents",
     subtitle: "Classroom index board for quick navigation",
@@ -151,7 +159,7 @@ export const navSections: NavSection[] = [
   },
   {
     id: "about",
-    number: "03",
+    number: "04",
     title: "Introduction / About Me",
     shortTitle: "About Me",
     subtitle: "Background, education timeline, goals, and teaching philosophy",
@@ -159,7 +167,7 @@ export const navSections: NavSection[] = [
   },
   {
     id: "objectives",
-    number: "04",
+    number: "05",
     title: "Learning Objectives",
     shortTitle: "Objectives",
     subtitle: "What I want to learn, skills to build, and knowledge to gain",
@@ -167,7 +175,7 @@ export const navSections: NavSection[] = [
   },
   {
     id: "course",
-    number: "05",
+    number: "06",
     title: "Course Overview",
     shortTitle: "Course",
     subtitle: "Syllabus, objectives, competencies, and lessons covered",
@@ -175,19 +183,11 @@ export const navSections: NavSection[] = [
   },
   {
     id: "activities",
-    number: "06",
+    number: "07",
     title: "Learning Activities & Outputs",
     shortTitle: "Activities",
     subtitle: "Worksheets, lesson plans, reports, exams, and demo teaching",
     accent: "yellow",
-  },
-  {
-    id: "gallery",
-    number: "07",
-    title: "Evidence of Learning & Gallery",
-    shortTitle: "Gallery",
-    subtitle: "Polaroid classroom scrapbook and instructor feedback",
-    accent: "blue",
   },
   {
     id: "reflection",

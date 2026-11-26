@@ -20,7 +20,7 @@ export function CourseOverviewSection() {
       className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20 lg:px-8"
     >
       <SectionHeader
-        number="05"
+        number="06"
         eyebrow="Course Syllabus Binder"
         title="Course Overview"
         subtitle="An organized overview of our course framework, competencies, and modules guided by our course instructor."

@@ -20,7 +20,7 @@ export function AboutSection() {
       className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20 lg:px-8"
     >
       <SectionHeader
-        number="03"
+        number="04"
         eyebrow="Getting to Know Me"
         title="Introduction / About Me"
         subtitle="My background, educational journey, passions, aspirations, and guiding philosophy as a future elementary educator."

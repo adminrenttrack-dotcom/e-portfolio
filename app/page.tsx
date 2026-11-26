@@ -18,12 +18,12 @@ export default function HomePage() {
 
       <main className="pt-16 md:pt-20">
         <HeroSection />
+        <GallerySection />
         <TableOfContents />
         <AboutSection />
         <ObjectivesSection />
         <CourseOverviewSection />
         <ActivitiesSection />
-        <GallerySection />
         <ReflectionSection />
       </main>
 

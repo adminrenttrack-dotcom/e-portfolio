@@ -42,7 +42,7 @@ export function ObjectivesSection() {
       className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20 lg:px-8"
     >
       <SectionHeader
-        number="04"
+        number="05"
         eyebrow="Classroom Sticky Notes"
         title="Learning Objectives"
         subtitle="My personal learning targets for this course—pinned to remind me of the educator I am striving to become."
