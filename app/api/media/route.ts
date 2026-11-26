@@ -86,10 +86,9 @@ export async function POST(request: Request) {
     });
   } catch (err) {
     console.error("POST /api/media error:", err);
-    return NextResponse.json(
-      { error: "Failed to save media metadata to Neon." },
-      { status: 500 }
-    );
+    const message =
+      err instanceof Error ? err.message : "Failed to save media metadata.";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 

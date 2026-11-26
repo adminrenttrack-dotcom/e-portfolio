@@ -332,8 +332,9 @@ export function GallerySection() {
           photoScrollRef.current?.scrollTo({ left: 0, behavior: "smooth" });
         }, 750);
       }
-    } catch {
-      setPhotoNotice("Upload failed. Please try again.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Upload failed.";
+      setPhotoNotice(`Error: ${msg}`);
     } finally {
       setIsUploadingPhoto(false);
       setUploadProgress(0);
@@ -412,8 +413,9 @@ export function GallerySection() {
           familyScrollRef.current?.scrollTo({ left: 0, behavior: "smooth" });
         }, 750);
       }
-    } catch {
-      setFamilyNotice("Upload failed. Please try again.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Upload failed.";
+      setFamilyNotice(`Error: ${msg}`);
     } finally {
       setIsUploadingFamily(false);
       setUploadProgress(0);
@@ -492,8 +494,9 @@ export function GallerySection() {
           videoScrollRef.current?.scrollTo({ left: 0, behavior: "smooth" });
         }, 850);
       }
-    } catch {
-      setVideoNotice("Upload failed. Please try a smaller MP4 video.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Upload failed.";
+      setVideoNotice(`Error: ${msg}`);
     } finally {
       setIsUploadingVideo(false);
       setUploadProgress(0);
@@ -1286,8 +1289,14 @@ export function GallerySection() {
                 </button>
 
                 {photoNotice && (
-                  <p className="text-center text-sm font-bold text-[#1E4D3B]">
-                    ✓ {photoNotice}
+                  <p
+                    className={`text-center text-sm font-bold ${
+                      photoNotice.startsWith("Error:")
+                        ? "text-[#BE123C]"
+                        : "text-[#1E4D3B]"
+                    }`}
+                  >
+                    {photoNotice.startsWith("Error:") ? photoNotice : `✓ ${photoNotice}`}
                   </p>
                 )}
               </div>
@@ -1418,8 +1427,14 @@ export function GallerySection() {
                 </button>
 
                 {familyNotice && (
-                  <p className="text-center text-sm font-bold text-[#1E4D3B]">
-                    ✓ {familyNotice}
+                  <p
+                    className={`text-center text-sm font-bold ${
+                      familyNotice.startsWith("Error:")
+                        ? "text-[#BE123C]"
+                        : "text-[#1E4D3B]"
+                    }`}
+                  >
+                    {familyNotice.startsWith("Error:") ? familyNotice : `✓ ${familyNotice}`}
                   </p>
                 )}
               </div>
@@ -1572,8 +1587,14 @@ export function GallerySection() {
                 </button>
 
                 {videoNotice && (
-                  <p className="text-center text-sm font-bold text-[#1E4D3B]">
-                    ✓ {videoNotice}
+                  <p
+                    className={`text-center text-sm font-bold ${
+                      videoNotice.startsWith("Error:")
+                        ? "text-[#BE123C]"
+                        : "text-[#1E4D3B]"
+                    }`}
+                  >
+                    {videoNotice.startsWith("Error:") ? videoNotice : `✓ ${videoNotice}`}
                   </p>
                 )}
               </div>

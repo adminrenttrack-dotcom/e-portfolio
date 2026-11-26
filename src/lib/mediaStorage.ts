@@ -9,7 +9,7 @@ export interface CloudMediaItem {
   mimeType: string;
 }
 
-const CHUNK_SIZE = 2 * 1024 * 1024; // 2 MB per chunk (safe under Vercel's 4.5 MB limit)
+const CHUNK_SIZE = 750 * 1024; // 750 KB per chunk (fast & safe over Neon HTTP + Vercel)
 
 export async function fetchCloudMedia(): Promise<{
   items: CloudMediaItem[];
@@ -66,7 +66,12 @@ export async function uploadFileToNeon(params: {
   });
 
   if (!metaRes.ok) {
-    throw new Error("Failed to save media metadata to Neon.");
+    const errData = (await metaRes.json().catch(() => ({}))) as {
+      error?: string;
+    };
+    throw new Error(
+      errData.error || `Metadata upload failed (${metaRes.status}).`
+    );
   }
 
   // 2. Upload binary chunks sequentially
@@ -85,12 +90,18 @@ export async function uploadFileToNeon(params: {
     );
 
     if (!chunkRes.ok) {
+      const errData = (await chunkRes.json().catch(() => ({}))) as {
+        error?: string;
+      };
       // Clean up partial metadata row if chunk upload fails
       await fetch(
         `/api/media?id=${encodeURIComponent(id)}&isUserUpload=true`,
         { method: "DELETE" }
       ).catch(() => {});
-      throw new Error("Failed to upload media chunk to Neon.");
+      throw new Error(
+        errData.error ||
+          `Chunk ${chunkIndex + 1}/${totalChunks} failed (${chunkRes.status}).`
+      );
     }
 
     if (onProgress) {

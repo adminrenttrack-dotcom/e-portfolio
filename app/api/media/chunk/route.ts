@@ -25,21 +25,20 @@ export async function POST(request: Request) {
     }
 
     const arrayBuffer = await request.arrayBuffer();
-    const hexData = "\\x" + Buffer.from(arrayBuffer).toString("hex");
+    const base64Data = Buffer.from(arrayBuffer).toString("base64");
 
     const sql = getSql();
     await sql`
       INSERT INTO eportfolio_media_chunks (media_id, chunk_index, data)
-      VALUES (${mediaId}, ${chunkIndex}, ${hexData}::bytea)
+      VALUES (${mediaId}, ${chunkIndex}, decode(${base64Data}, 'base64'))
       ON CONFLICT (media_id, chunk_index) DO UPDATE SET data = EXCLUDED.data
     `;
 
     return NextResponse.json({ ok: true, chunkIndex });
   } catch (err) {
     console.error("POST /api/media/chunk error:", err);
-    return NextResponse.json(
-      { error: "Failed to upload media chunk to Neon." },
-      { status: 500 }
-    );
+    const message =
+      err instanceof Error ? err.message : "Failed to upload media chunk.";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
