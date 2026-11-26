@@ -71,8 +71,8 @@ function VideoCardPlayer({ src, title }: { src: string; title: string }) {
           {title}
         </p>
         <span className="mt-2 inline-block rounded-full bg-white/15 px-3 py-0.5 text-[11px] font-medium text-[#FFFDF7]/90">
-          {src.startsWith("blob:")
-            ? "Unsupported video format"
+          {src.startsWith("/api/") || src.startsWith("blob:")
+            ? "Video format not supported by this browser (try MP4 / H.264)"
             : `Upload or drop video at public${src}`}
         </span>
       </div>
